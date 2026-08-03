@@ -5,27 +5,56 @@
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
-      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./react": {
-      "import": { "types": "./dist/react.d.ts", "default": "./dist/react.js" },
-      "require": { "types": "./dist/react.d.cts", "default": "./dist/react.cjs" }
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
     },
     "./adapters": {
-      "import": { "types": "./dist/adapters.d.ts", "default": "./dist/adapters.js" },
-      "require": { "types": "./dist/adapters.d.cts", "default": "./dist/adapters.cjs" }
+      "import": {
+        "types": "./dist/adapters.d.ts",
+        "default": "./dist/adapters.js"
+      },
+      "require": {
+        "types": "./dist/adapters.d.cts",
+        "default": "./dist/adapters.cjs"
+      }
     },
     "./testing": {
-      "import": { "types": "./dist/testing.d.ts", "default": "./dist/testing.js" },
-      "require": { "types": "./dist/testing.d.cts", "default": "./dist/testing.cjs" }
+      "import": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      },
+      "require": {
+        "types": "./dist/testing.d.cts",
+        "default": "./dist/testing.cjs"
+      }
     }
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -37,7 +66,10 @@
     "pretest": "npm run build",
     "test": "node --test",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run typecheck && npm run build"
+    "prepublishOnly": "npm run clean && npm run typecheck && npm run build",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish"
   },
   "keywords": [
     "notifications",
@@ -57,12 +89,21 @@
     "react": ">=18.0.0"
   },
   "peerDependenciesMeta": {
-    "@parity/product-sdk-host": { "optional": true },
-    "@parity/product-sdk-local-storage": { "optional": true },
-    "@parity/product-sdk-statement-store": { "optional": true },
-    "react": { "optional": true }
+    "@parity/product-sdk-host": {
+      "optional": true
+    },
+    "@parity/product-sdk-local-storage": {
+      "optional": true
+    },
+    "@parity/product-sdk-statement-store": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "@parity/product-sdk-host": "^0.14.1",
     "@parity/product-sdk-local-storage": "^0.3.2",
     "@parity/product-sdk-statement-store": "^0.6.2",
