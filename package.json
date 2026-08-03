@@ -1,0 +1,74 @@
+{
+  "name": "@minato-32/statement-notify",
+  "version": "0.1.0",
+  "description": "Cross-platform, reactive in-app notification store for web apps: a durable notification feed with injectable transport and storage that survives IndexedDB-stripped WebViews by falling back from a host key-value store to browser storage to memory.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./react": {
+      "import": { "types": "./dist/react.d.ts", "default": "./dist/react.js" },
+      "require": { "types": "./dist/react.d.cts", "default": "./dist/react.cjs" }
+    },
+    "./adapters": {
+      "import": { "types": "./dist/adapters.d.ts", "default": "./dist/adapters.js" },
+      "require": { "types": "./dist/adapters.d.cts", "default": "./dist/adapters.cjs" }
+    },
+    "./testing": {
+      "import": { "types": "./dist/testing.d.ts", "default": "./dist/testing.js" },
+      "require": { "types": "./dist/testing.d.cts", "default": "./dist/testing.cjs" }
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run build",
+    "test": "node --test",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run typecheck && npm run build"
+  },
+  "keywords": [
+    "notifications",
+    "in-app",
+    "reactive",
+    "store",
+    "useSyncExternalStore",
+    "indexeddb",
+    "webview",
+    "offline",
+    "cross-platform"
+  ],
+  "peerDependencies": {
+    "@parity/product-sdk-host": "^0.14.0",
+    "@parity/product-sdk-local-storage": "^0.3.0",
+    "@parity/product-sdk-statement-store": "^0.6.0",
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@parity/product-sdk-host": { "optional": true },
+    "@parity/product-sdk-local-storage": { "optional": true },
+    "@parity/product-sdk-statement-store": { "optional": true },
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@parity/product-sdk-host": "^0.14.1",
+    "@parity/product-sdk-local-storage": "^0.3.2",
+    "@parity/product-sdk-statement-store": "^0.6.2",
+    "@types/react": "^18.3.0",
+    "react": "^18.3.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}
