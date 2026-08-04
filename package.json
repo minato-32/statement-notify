@@ -114,12 +114,12 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
-    "@parity/product-sdk-host": "^0.14.1",
+    "@parity/product-sdk-host": "^0.15.0",
     "@parity/product-sdk-local-storage": "^0.3.2",
     "@parity/product-sdk-statement-store": "^0.6.2",
-    "@types/react": "^18.3.0",
-    "react": "^18.3.0",
+    "@types/react": "^19.2.18",
+    "react": "^19.2.8",
     "tsup": "^8.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^7.0.2"
   }
 }
