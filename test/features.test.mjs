@@ -8,10 +8,44 @@ import {
   groupByDay,
   isDndActive,
   isSuppressed,
+  memoryKvBackend,
+  NotificationFeed,
+  PersistentRecordStore,
   queryRecords,
+  ResilientKvStore,
 } from "../dist/index.js";
 
 const rec = (id, over = {}) => ({ id, ts: Date.now(), payload: {}, ...over });
+
+test("hydrate notifies listeners so a feed built before hydrate re-derives", async () => {
+  // A shared backend so the second store loads what the first persisted.
+  const backend = memoryKvBackend();
+  const opts = { backend, key: "hydrate-test" };
+
+  // First store: add two records, flush the debounced write.
+  const persister1 = new ResilientKvStore(opts);
+  const s1 = new PersistentRecordStore({ persister: persister1, schemaVersion: 1 });
+  s1.add(rec("a"));
+  s1.add(rec("b"));
+  // The persister debounces writes; force it out before we read from another store.
+  persister1.flush();
+  await new Promise((r) => setTimeout(r, 50));
+
+  // Second store built fresh; a feed subscribes BEFORE hydrate resolves (the
+  // real cold-reload ordering). Without hydrate()'s notify(), the feed would
+  // stay on its empty initial view forever.
+  const s2 = new PersistentRecordStore({
+    persister: new ResilientKvStore(opts),
+    schemaVersion: 1,
+  });
+  const feed = new NotificationFeed(s2);
+  assert.equal(feed.getSnapshot().items.length, 0, "feed empty before hydrate");
+
+  await s2.hydrate();
+
+  assert.equal(feed.getSnapshot().items.length, 2, "feed re-derived after hydrate");
+  assert.equal(feed.getSnapshot().unreadCount, 2);
+});
 
 test("queryRecords filters by category, unread, search, priority + sorts", () => {
   const items = [

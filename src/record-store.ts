@@ -65,6 +65,11 @@ export class PersistentRecordStore<P = unknown> {
       }
     }
     this.rebuild();
+    // Notify: hydrate is async, so any consumer that built a view (a feed, a
+    // useSyncExternalStore snapshot) before the blob resolved is holding the
+    // empty pre-hydrate state and must be told to re-read. (No persist() — we
+    // just loaded from the persister; re-saving would be wasteful.)
+    this.notify();
   }
 
   dispose(): void {
