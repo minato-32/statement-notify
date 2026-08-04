@@ -4,6 +4,15 @@
   "description": "Cross-platform, reactive in-app notification store for web apps: a durable notification feed with injectable transport and storage that survives IndexedDB-stripped WebViews by falling back from a host key-value store to browser storage to memory.",
   "type": "module",
   "license": "MIT",
+  "author": "minato-32",
+  "homepage": "https://github.com/minato-32/statement-notify#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minato-32/statement-notify.git"
+  },
+  "bugs": {
+    "url": "https://github.com/minato-32/statement-notify/issues"
+  },
   "sideEffects": false,
   "files": [
     "dist"
@@ -54,7 +63,8 @@
     "node": ">=18"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
