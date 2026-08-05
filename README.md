@@ -7,9 +7,6 @@ you a durable, deduped notification **feed** with read/unread state and a
 reactive unread badge — one data layer that drives a bell, a toast, and a full
 center identically, and survives reloads and app restarts.
 
-It ships **data logic, not UI** (hooks + stores + pure selectors); build your
-surfaces with your own design system.
-
 ## Why
 
 - **Survives IndexedDB-stripped WebViews.** Persistence auto-selects **host KV →
