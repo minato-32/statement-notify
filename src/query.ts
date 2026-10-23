@@ -2,6 +2,7 @@
  *  paginate, group. */
 
 import type { NotifyPriority, NotifyRecord } from "./types.js";
+import { encodeJson } from "./serialize.js";
 import { PRIORITY_WEIGHT } from "./types.js";
 
 /** How to render a record as searchable/plain text. Defaults to title/body then
@@ -12,7 +13,7 @@ function defaultText<P>(record: NotifyRecord<P>): string {
   return (
     record.title ??
     record.body ??
-    (typeof record.payload === "string" ? record.payload : JSON.stringify(record.payload))
+    (typeof record.payload === "string" ? record.payload : encodeJson(record.payload))
   );
 }
 

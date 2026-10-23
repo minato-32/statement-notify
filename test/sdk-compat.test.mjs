@@ -6,7 +6,7 @@ import {
   toHostPushRequest,
   transportFromStatementClient,
 } from "../dist/adapters.js";
-import { createStatementNotifier } from "../dist/index.js";
+import { createStatementNotifier, queryRecords } from "../dist/index.js";
 import { fakeKvBackend } from "../dist/testing.js";
 
 /** A fake StatementStoreClient shaped like product-sdk-statement-store 0.7. */
@@ -117,4 +117,29 @@ test("push sink maps with the default mapper and cancels by numeric id", async (
   await sink.cancel(id);
   assert.deepEqual(sent, [{ text: "Hi: there" }]);
   assert.deepEqual(cancelled, [7]);
+});
+
+test("records holding a bigint (e.g. statement expiry) persist and search", async () => {
+  const kv = fakeKvBackend();
+  const { client, deliver } = fakeClient();
+  const opts = {
+    name: "bigint",
+    schemaVersion: 1,
+    kv,
+    persist: { debounceMs: 1 },
+    watchdog: { enabled: false },
+    toRecord: (d, meta) => ({ id: d.id, ts: d.ts, payload: { ...d, expiry: meta.expiry } }),
+  };
+  const n1 = await createStatementNotifier({ ...opts, transport: transportFromStatementClient(client) });
+  deliver({ data: { id: "a", ts: Date.now(), text: "hello" }, topics: [], expiry: 2n ** 40n });
+  n1.flush();
+  await new Promise((r) => setTimeout(r, 30));
+  n1.stop();
+  const n2 = await createStatementNotifier({
+    ...opts,
+    transport: transportFromStatementClient(fakeClient().client),
+  });
+  assert.equal(n2.store.get("a").payload.expiry, 2n ** 40n);
+  assert.equal(queryRecords(n2.store.getAll(), { search: "hello" }).length, 1);
+  n2.stop();
 });

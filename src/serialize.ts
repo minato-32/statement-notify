@@ -1,4 +1,5 @@
-/** Versioned envelope + JSON (de)serialization that round-trips `Uint8Array`.
+/** Versioned envelope + JSON (de)serialization that round-trips `Uint8Array`
+ *  and `bigint` (e.g. a statement's `expiry`).
  *  The version lets a breaking change be detected and the store rebuilt rather
  *  than crash on incompatible persisted data. */
 
@@ -17,7 +18,9 @@ export interface Envelope<T> {
 }
 
 function u8Replacer(_key: string, value: unknown): unknown {
-  return value instanceof Uint8Array ? { $u8: u8ToBase64(value) } : value;
+  if (value instanceof Uint8Array) return { $u8: u8ToBase64(value) };
+  if (typeof value === "bigint") return { $big: value.toString() };
+  return value;
 }
 
 function u8Reviver(_key: string, value: unknown): unknown {
@@ -28,15 +31,22 @@ function u8Reviver(_key: string, value: unknown): unknown {
   ) {
     return base64ToU8((value as { $u8: string }).$u8);
   }
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    typeof (value as { $big?: unknown }).$big === "string"
+  ) {
+    return BigInt((value as { $big: string }).$big);
+  }
   return value;
 }
 
-/** Serialize a value to a JSON string, encoding any `Uint8Array` fields. */
+/** Serialize a value to a JSON string, encoding any `Uint8Array` / `bigint` fields. */
 export function encodeJson(value: unknown): string {
   return JSON.stringify(value, u8Replacer);
 }
 
-/** Parse a JSON string, restoring any encoded `Uint8Array` fields. */
+/** Parse a JSON string, restoring any encoded `Uint8Array` / `bigint` fields. */
 export function decodeJson<T>(text: string): T {
   return JSON.parse(text, u8Reviver) as T;
 }
