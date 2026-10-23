@@ -93,15 +93,39 @@ export interface NotificationManagerLike {
   cancel?(id: unknown): Promise<void>;
 }
 
+/** The host's push-request shape (truapi `HostPushNotificationRequest`, RFC-0019). */
+export interface HostPushRequest {
+  text: string;
+  deeplink?: string;
+  /** Unix ms (UTC); omitted fires immediately. */
+  scheduledAt?: bigint;
+}
+
+/**
+ * Default {@link PushInput} → host push-request mapping. The host renders a
+ * single `text` line, so `title` and `body` are joined. An `at` that is not a
+ * future time fires immediately (a u64 can't hold a negative, and a host may
+ * reject a past schedule).
+ */
+export function toHostPushRequest(input: PushInput): HostPushRequest {
+  const request: HostPushRequest = {
+    text: [input.title, input.body].filter(Boolean).join(": "),
+  };
+  if (input.route) request.deeplink = input.route;
+  if (input.at !== undefined && Number.isFinite(input.at) && input.at > Date.now()) {
+    request.scheduledAt = BigInt(Math.floor(input.at));
+  }
+  return request;
+}
+
 /**
  * Wrap a host `NotificationManager` (`getNotificationManager()`) as a
  * {@link PushSink}. `mapInput` translates this package's {@link PushInput} into
- * the host's push-request shape — required, because that shape is host-specific
- * (RFC-0019) and this package deliberately does not hard-code it.
+ * the host's push-request shape; it defaults to {@link toHostPushRequest}.
  */
 export function pushSinkFromNotificationManager(
   manager: NotificationManagerLike,
-  mapInput: (input: PushInput) => unknown,
+  mapInput: (input: PushInput) => unknown = toHostPushRequest,
 ): PushSink {
   const sink: PushSink = {
     push: (input: PushInput) => manager.push(mapInput(input)),

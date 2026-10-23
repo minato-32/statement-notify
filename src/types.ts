@@ -102,6 +102,9 @@ export interface PushInput {
   body?: string;
   /** Deep-link the host opens on tap. */
   route?: string;
+  /** Fire at this time (ms since epoch) instead of immediately. A time that is
+   *  not in the future fires immediately. */
+  at?: number;
 }
 
 /** Injectable OS-push side-channel. Optional + best-effort; when absent, OS push is skipped and the feed still works. */

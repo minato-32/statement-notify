@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { transportFromStatementClient } from "../dist/adapters.js";
+import {
+  pushSinkFromNotificationManager,
+  toHostPushRequest,
+  transportFromStatementClient,
+} from "../dist/adapters.js";
 import { createStatementNotifier } from "../dist/index.js";
 import { fakeKvBackend } from "../dist/testing.js";
 
@@ -81,4 +85,36 @@ test("publish forwards decryptionKey and rejects on an err Result", async () => 
   await transport.publish({ a: 1 }, { topic2: "room", decryptionKey: key });
   assert.equal(published[0].options.decryptionKey, key);
   await assert.rejects(transport.publish("reject"), /too large/);
+});
+
+test("toHostPushRequest builds the host's push request shape", () => {
+  assert.deepEqual(toHostPushRequest({ title: "Trade" }), { text: "Trade" });
+  assert.deepEqual(
+    toHostPushRequest({ title: "Trade", body: "accepted", route: "/t/1", at: 4102444800000.7 }),
+    { text: "Trade: accepted", deeplink: "/t/1", scheduledAt: 4102444800000n },
+  );
+  // An invalid or past time fires immediately instead of throwing out of push().
+  assert.deepEqual(toHostPushRequest({ title: "Trade", at: Number.NaN }), { text: "Trade" });
+  assert.deepEqual(toHostPushRequest({ title: "Trade", at: -1 }), { text: "Trade" });
+  assert.deepEqual(toHostPushRequest({ title: "Trade", at: Date.now() - 5_000 }), { text: "Trade" });
+  // An empty title doesn't leave a stray separator.
+  assert.deepEqual(toHostPushRequest({ title: "", body: "accepted" }), { text: "accepted" });
+});
+
+test("push sink maps with the default mapper and cancels by numeric id", async () => {
+  const sent = [];
+  const cancelled = [];
+  const sink = pushSinkFromNotificationManager({
+    push: async (input) => {
+      sent.push(input);
+      return 7;
+    },
+    cancel: async (id) => {
+      cancelled.push(id);
+    },
+  });
+  const id = await sink.push({ title: "Hi", body: "there" });
+  await sink.cancel(id);
+  assert.deepEqual(sent, [{ text: "Hi: there" }]);
+  assert.deepEqual(cancelled, [7]);
 });
