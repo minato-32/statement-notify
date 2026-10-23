@@ -30,12 +30,18 @@ type ResultLike<E> = { ok: true } | { ok: false; error: E };
 /** Structural subset of `StatementStoreClient` this adapter relies on. */
 export interface StatementClientLike {
   subscribe<T>(
-    callback: (statement: { data: T; channelHex?: string; topics?: string[] }) => void,
+    callback: (statement: {
+      data: T;
+      channelHex?: string;
+      topics?: string[];
+      signerHex?: string;
+      expiry?: bigint;
+    }) => void,
     options?: { topic2?: string },
   ): { unsubscribe: () => void };
   publish?<T>(
     data: T,
-    options?: { channel?: string; topic2?: string; ttlSeconds?: number },
+    options?: PublishLike,
   ): Promise<ResultLike<unknown>>;
   isConnected?(): boolean;
 }
@@ -57,6 +63,8 @@ export function transportFromStatementClient(client: StatementClientLike): Notif
           onData(statement.data, {
             channelHex: statement.channelHex,
             topics: statement.topics,
+            signerHex: statement.signerHex,
+            expiry: statement.expiry,
           }),
         options,
       );
