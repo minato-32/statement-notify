@@ -32,6 +32,18 @@ Everything is injected, so the core has no runtime deps. `react` is an optional
 peer (for `/react`); the Polkadot SDK adapters (`/adapters`) optionally pair with
 `@parity/product-sdk-*`.
 
+Pick the line that matches your host. Hosts on truapi 0.26 speak a new wire
+codec that older SDKs cannot talk to, and the reverse:
+
+| statement-notify | npm tag | product-sdk-host | statement-store | local-storage | host truapi |
+|---|---|---|---|---|---|
+| `0.2.x` | `next` | `>=0.29 <1` | `>=0.7.4 <1` | `>=0.3.20 <1` | 0.26+ |
+| `0.1.x` | `latest` | `0.14.x` | `0.6.x` | `0.3.x` | 0.5 |
+
+```sh
+npm i @minato-32/statement-notify@next   # latest hosts
+```
+
 ## Quick start
 
 ```ts
@@ -159,19 +171,39 @@ import { createLocalKvStore } from "@parity/product-sdk-local-storage";
 import { getNotificationManager } from "@parity/product-sdk-host";
 
 const client = new StatementStoreClient({ appName: "my-app" });
-await client.connect({ mode: "host", accountId: ["5Grw…", 42] });
+await client.connect({ mode: "host" });
 const kv = await createLocalKvStore({ prefix: "my-app" }).catch(() => undefined);
 const manager = await getNotificationManager(); // null outside a container
+const trusted = new Set(["0x…"]); // signer public keys you accept
 
 const notifier = await createStatementNotifier({
   name: "trades",
   schemaVersion: 1,
   transport: transportFromStatementClient(client),
   kv: kv ? kvBackendFromLocalKvStore(kv) : undefined,
-  push: manager ? pushSinkFromNotificationManager(manager, (i) => ({ title: i.title, body: i.body, deeplink: i.route })) : undefined,
-  toRecord,
+  // Maps to the host's { text, deeplink, scheduledAt } push request by default.
+  push: manager ? pushSinkFromNotificationManager(manager) : undefined,
+  // Anyone can publish on an app's topic: accept only senders you trust.
+  // Statements without a proof have no signerHex and are dropped here.
+  toRecord: (data, meta) =>
+    meta.signerHex && trusted.has(meta.signerHex)
+      ? { id: data.id, ts: data.ts, payload: data }
+      : null,
 });
 ```
+
+`signerHex` is copied from the statement's proof; the SDK does not re-check the
+signature and relies on the statement store node having validated it.
+
+Since statement-store 0.6.16 the store dedupes per (signer, channel), so the
+same content published by two accounts is delivered twice. The feed dedupes by
+`id`, so both deliveries collapse into one record as long as `id` comes from the
+content. Put `signerHex` in the `id` only if you want one record per sender.
+
+The host shows one line of text, so `toHostPushRequest` joins `title` and `body`
+as `"title: body"`. Pass your own mapper as the second argument to change that.
+Set `PushInput.at` (ms since epoch, in the future) to schedule a push; a past
+time fires immediately.
 
 ## Testing
 
