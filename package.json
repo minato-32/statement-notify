@@ -93,9 +93,9 @@
     "cross-platform"
   ],
   "peerDependencies": {
-    "@parity/product-sdk-host": "^0.14.0",
-    "@parity/product-sdk-local-storage": "^0.3.0",
-    "@parity/product-sdk-statement-store": "^0.6.0",
+    "@parity/product-sdk-host": ">=0.29.0 <1.0.0",
+    "@parity/product-sdk-local-storage": ">=0.3.20 <1.0.0",
+    "@parity/product-sdk-statement-store": ">=0.7.4 <1.0.0",
     "react": ">=18.0.0"
   },
   "peerDependenciesMeta": {
