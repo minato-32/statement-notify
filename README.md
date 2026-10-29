@@ -32,13 +32,14 @@ Everything is injected, so the core has no runtime deps. `react` is an optional
 peer (for `/react`); the Polkadot SDK adapters (`/adapters`) optionally pair with
 `@parity/product-sdk-*`.
 
-Pick the line that matches your host. Hosts on truapi 0.26 speak a new wire
-codec that older SDKs cannot talk to, and the reverse:
+Pick the line that matches your host. A host SDK release only talks to hosts on
+its own truapi version (host SDK 0.29–0.30 → truapi 0.26, 0.31 → truapi 0.27),
+so install the three SDK packages from the same release:
 
 | statement-notify | npm tag | product-sdk-host | statement-store | local-storage | host truapi |
 |---|---|---|---|---|---|
-| `0.2.x` | `next` | `>=0.29 <1` | `>=0.7.4 <1` | `>=0.3.20 <1` | 0.26+ |
-| `0.1.x` | `latest` | `0.14.x` | `0.6.x` | `0.3.x` | 0.5 |
+| `0.2.x` | `next` | `>=0.29 <1` | `>=0.7.4 <1` | `>=0.3.20 <1` | 0.26, 0.27 |
+| `0.1.x` | `latest` | `0.14.x` | `0.6.1`–`0.6.2` | `0.3.1`–`0.3.2` | 0.5 |
 
 ```sh
 npm i @minato-32/statement-notify@next   # latest hosts
@@ -183,6 +184,7 @@ const notifier = await createStatementNotifier({
   kv: kv ? kvBackendFromLocalKvStore(kv) : undefined,
   // Maps to the host's { text, deeplink, scheduledAt } push request by default.
   push: manager ? pushSinkFromNotificationManager(manager) : undefined,
+  toPush: (record) => ({ title: "New trade", route: `/trades/${record.id}` }),
   // Anyone can publish on an app's topic: accept only senders you trust.
   // Statements without a proof have no signerHex and are dropped here.
   toRecord: (data, meta) =>
