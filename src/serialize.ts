@@ -1,4 +1,5 @@
-/** Versioned envelope + JSON (de)serialization that round-trips `Uint8Array`.
+/** Versioned envelope + JSON (de)serialization that round-trips `Uint8Array`
+ *  and `bigint` (e.g. a statement's `expiry`).
  *  The version lets a breaking change be detected and the store rebuilt rather
  *  than crash on incompatible persisted data. */
 
@@ -17,26 +18,52 @@ export interface Envelope<T> {
 }
 
 function u8Replacer(_key: string, value: unknown): unknown {
-  return value instanceof Uint8Array ? { $u8: u8ToBase64(value) } : value;
+  if (value instanceof Uint8Array) return { $u8: u8ToBase64(value) };
+  if (typeof value === "bigint") return { $big: value.toString() };
+  return value;
 }
 
-function u8Reviver(_key: string, value: unknown): unknown {
-  if (
+/** True only for an exact tag this module writes: a plain object whose single
+ *  key is `key` with a string value. Objects that merely contain the key are
+ *  app data and pass through untouched. */
+function isTag(value: unknown, key: "$u8" | "$big"): value is Record<string, string> {
+  return (
     value !== null &&
     typeof value === "object" &&
-    typeof (value as { $u8?: unknown }).$u8 === "string"
-  ) {
-    return base64ToU8((value as { $u8: string }).$u8);
+    !Array.isArray(value) &&
+    Object.keys(value).length === 1 &&
+    typeof (value as Record<string, unknown>)[key] === "string"
+  );
+}
+
+// A tag that fails to decode is returned as-is, so one bad value (e.g. from an
+// untrusted payload) can't throw and discard the whole persisted blob.
+function u8Reviver(_key: string, value: unknown): unknown {
+  if (isTag(value, "$u8")) {
+    try {
+      return base64ToU8(value.$u8 as string);
+    } catch {
+      return value;
+    }
+  }
+  // The replacer always writes a plain decimal; anything else (e.g. "" or
+  // "0x10", which BigInt() would accept) isn't ours.
+  if (isTag(value, "$big") && /^-?\d+$/.test(value.$big as string)) {
+    try {
+      return BigInt(value.$big as string);
+    } catch {
+      return value;
+    }
   }
   return value;
 }
 
-/** Serialize a value to a JSON string, encoding any `Uint8Array` fields. */
+/** Serialize a value to a JSON string, encoding any `Uint8Array` / `bigint` fields. */
 export function encodeJson(value: unknown): string {
   return JSON.stringify(value, u8Replacer);
 }
 
-/** Parse a JSON string, restoring any encoded `Uint8Array` fields. */
+/** Parse a JSON string, restoring any encoded `Uint8Array` / `bigint` fields. */
 export function decodeJson<T>(text: string): T {
   return JSON.parse(text, u8Reviver) as T;
 }

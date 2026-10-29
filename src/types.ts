@@ -60,6 +60,14 @@ export interface StatementMeta {
   channelHex?: string;
   /** Routing topics attached to the statement. */
   topics?: string[];
+  /** Signer public key (hex), copied from the statement's proof when it has one.
+   *  The SDK does not check the signature itself; it relies on the statement
+   *  store node having validated the proof. The store dedupes per (signer,
+   *  channel), so the same content from two senders arrives twice; a
+   *  content-derived record `id` collapses them. */
+  signerHex?: string;
+  /** Statement expiry (upper 32 bits = unix seconds, lower 32 = sequence). */
+  expiry?: bigint;
 }
 
 /** Options for a publish call. */
@@ -70,6 +78,8 @@ export interface PublishLike {
   topic2?: string;
   /** Time-to-live override (seconds). */
   ttlSeconds?: number;
+  /** Decryption key hint (32 bytes), used by the host to filter statements. */
+  decryptionKey?: Uint8Array;
 }
 
 /** Injectable message source. `subscribe` delivers already-decoded payloads (adapter in `/adapters`). */
@@ -92,6 +102,9 @@ export interface PushInput {
   body?: string;
   /** Deep-link the host opens on tap. */
   route?: string;
+  /** Fire at this time (ms since epoch) instead of immediately. A time that is
+   *  not in the future fires immediately. */
+  at?: number;
 }
 
 /** Injectable OS-push side-channel. Optional + best-effort; when absent, OS push is skipped and the feed still works. */
