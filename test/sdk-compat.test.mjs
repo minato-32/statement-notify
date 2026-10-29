@@ -143,3 +143,39 @@ test("records holding a bigint (e.g. statement expiry) persist and search", asyn
   assert.equal(queryRecords(n2.store.getAll(), { search: "hello" }).length, 1);
   n2.stop();
 });
+
+test("a payload with tag-like keys survives a restart without wiping the feed", async () => {
+  const kv = fakeKvBackend();
+  const opts = {
+    name: "tags",
+    schemaVersion: 1,
+    kv,
+    persist: { debounceMs: 1 },
+    watchdog: { enabled: false },
+    toRecord: (d) => ({ id: d.id, ts: d.ts, payload: d }),
+  };
+  const { client, deliver } = fakeClient();
+  const n1 = await createStatementNotifier({ ...opts, transport: transportFromStatementClient(client) });
+  const ts = Date.now();
+  deliver({ data: { id: "ok", ts, big: 5n, bytes: new Uint8Array([1, 2, 3]) }, topics: [] });
+  deliver({ data: { id: "extra", ts, meta: { $big: "5", note: "keep me" } }, topics: [] });
+  deliver({ data: { id: "badBig", ts, meta: { $big: "zz" } }, topics: [] });
+  deliver({ data: { id: "badU8", ts, meta: { $u8: "%%%" } }, topics: [] });
+  deliver({ data: { id: "loose", ts, meta: { $big: "0x10" } }, topics: [] });
+  n1.flush();
+  await new Promise((r) => setTimeout(r, 30));
+  n1.stop();
+  const n2 = await createStatementNotifier({
+    ...opts,
+    transport: transportFromStatementClient(fakeClient().client),
+  });
+  assert.equal(n2.store.getAll().length, 5);
+  // Real tags still decode next to the bad ones.
+  assert.equal(n2.store.get("ok").payload.big, 5n);
+  assert.deepEqual(n2.store.get("ok").payload.bytes, new Uint8Array([1, 2, 3]));
+  assert.deepEqual(n2.store.get("extra").payload.meta, { $big: "5", note: "keep me" });
+  assert.deepEqual(n2.store.get("badBig").payload.meta, { $big: "zz" });
+  assert.deepEqual(n2.store.get("badU8").payload.meta, { $u8: "%%%" });
+  assert.deepEqual(n2.store.get("loose").payload.meta, { $big: "0x10" });
+  n2.stop();
+});
