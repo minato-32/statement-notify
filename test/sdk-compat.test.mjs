@@ -87,6 +87,22 @@ test("publish forwards decryptionKey and rejects on an err Result", async () => 
   await assert.rejects(transport.publish("reject"), /too large/);
 });
 
+test("publish keeps the client's this, like the SDK's class-based client", async () => {
+  class Client {
+    sent = [];
+    subscribe() {
+      return { unsubscribe() {} };
+    }
+    async publish(data) {
+      this.sent.push(data);
+      return { ok: true };
+    }
+  }
+  const client = new Client();
+  await transportFromStatementClient(client).publish({ a: 1 });
+  assert.deepEqual(client.sent, [{ a: 1 }]);
+});
+
 test("toHostPushRequest builds the host's push request shape", () => {
   assert.deepEqual(toHostPushRequest({ title: "Trade" }), { text: "Trade" });
   assert.deepEqual(

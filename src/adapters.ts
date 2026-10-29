@@ -52,7 +52,8 @@ export interface StatementClientLike {
  * function, and its `Result` publish outcome to a resolving/rejecting promise.
  */
 export function transportFromStatementClient(client: StatementClientLike): NotifyTransport {
-  const publish = client.publish;
+  // Bound: the SDK's publish is a class method that reads `this`.
+  const publish = client.publish?.bind(client);
   const transport: NotifyTransport = {
     subscribe: <T>(
       onData: (data: T, meta: StatementMeta) => void,
